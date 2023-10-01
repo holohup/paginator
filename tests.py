@@ -39,6 +39,19 @@ class TestBorderCases(TestCase):
         self.assertEqual(Paginator(2, 2, 0, 0).get_pages(), '... 2')
         self.assertEqual(Paginator(1, 2, 0, 0).get_pages(), '1 ...')
 
+    def test_corner_cases_with_many_pages(self):
+        self.assertEqual(
+            Paginator(1, 100_000_000_000, 0, 0).get_pages(), '1 ...'
+        )
+        self.assertEqual(
+            Paginator(100_000_000_000, 100_000_000_000, 0, 0).get_pages(),
+            '... 100000000000',
+        )
+        self.assertEqual(
+            Paginator(50_000_000_000, 100_000_000_000, 1, 1).get_pages(),
+            '1 ... 49999999999 50000000000 50000000001 ... 100000000000',
+        )
+
 
 class TestRegularCases(TestCase):
     """Regular cases tests."""
@@ -71,7 +84,7 @@ class TestInvalidPaginationParametersExceptions(TestCase):
             Paginator(current_page=5, total_pages=3, boundaries=1, around=1)
 
     def test_non_integer_on_init_raises_exception(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             Paginator(current_page=5.0, total_pages=30, boundaries=1, around=1)
             Paginator(current_page=5, total_pages='a', boundaries=1, around=1)
             Paginator(
