@@ -21,24 +21,6 @@ class TestBorderCases(TestCase):
         self.assertEqual(Paginator(2, 2, 0, 0).get_pages(), '... 2')
         self.assertEqual(Paginator(1, 2, 0, 0).get_pages(), '1 ...')
 
-    def test_corner_cases_with_many_pages(self):
-        self.assertEqual(
-            Paginator(1, 100_000_000_000, 0, 0).get_pages(), '1 ...'
-        )
-        self.assertEqual(
-            Paginator(100_000_000_000, 100_000_000_000, 0, 0).get_pages(),
-            '... 100000000000',
-        )
-        self.assertEqual(
-            Paginator(50_000_000_000, 100_000_000_000, 1, 1).get_pages(),
-            '1 ... 49999999999 50000000000 50000000001 ... 100000000000',
-        )
-
-    def test_100_million_pages(self):
-        self.assertEqual(Paginator(
-            100_000_000, 100_000_000, 100_000_000, 100_000_000
-        ).get_pages(), ' '.join(map(str, range(1, 100_000_001))))
-
 
 class TestRegularCases(TestCase):
     """Regular cases tests."""
@@ -61,6 +43,24 @@ class TestRegularCases(TestCase):
         for params, result in expected_results.items():
             with self.subTest(params=params, result=result):
                 self.assertEqual(Paginator(*params).get_pages(), result)
+
+    def test_with_many_pages(self):
+        self.assertEqual(
+            Paginator(1, 100_000_000_000, 0, 0).get_pages(), '1 ...'
+        )
+        self.assertEqual(
+            Paginator(100_000_000_000, 100_000_000_000, 0, 0).get_pages(),
+            '... 100000000000',
+        )
+        self.assertEqual(
+            Paginator(50_000_000_000, 100_000_000_000, 1, 1).get_pages(),
+            '1 ... 49999999999 50000000000 50000000001 ... 100000000000',
+        )
+
+    def test_100_million_pages_in_result(self):
+        self.assertEqual(Paginator(
+            100_000_000, 100_000_000, 100_000_000, 100_000_000
+        ).get_pages(), ' '.join(map(str, range(1, 100_000_001))))
 
 
 class TestInvalidPaginationParametersExceptions(TestCase):

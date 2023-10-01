@@ -98,5 +98,5 @@ class Paginator:
 
 
 if __name__ == '__main__':
-    p = Paginator(50_000_000, 100_000_000, 10, 3)
+    p = Paginator(50_000_000, 100_000_000, 3, 2)
     p.print_pagination()
