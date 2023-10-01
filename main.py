@@ -29,7 +29,7 @@ class Paginator:
     def get_pages(self) -> str:
         sorted_events = sorted(self._scribe_interval_events())
         sorted_intervals = self._sort_open_intervals(sorted_events)
-        return ' '.join(self._build_pagination(sorted_intervals))
+        return ' '.join(self._pagination_results_generator(sorted_intervals))
 
     def _scribe_interval_events(self) -> list[tuple]:
         events = [
@@ -69,19 +69,19 @@ class Paginator:
                 interval_start = None
         return open_intervals
 
-    def _build_pagination(self, open_intervals: list[Interval]) -> list[str]:
-        result = []
-        for i in range(1, len(open_intervals)):
-            if open_intervals[i].start - open_intervals[i - 1].end > 1:
-                result.append('...')
-            result.extend(generate_ascending_numbers_list(open_intervals[i]))
-        if open_intervals[-1].end < self._total_pages:
-            result.append('...')
-        return result
+    def _pagination_results_generator(self, intervals: list[Interval]):
+        for i in range(1, len(intervals)):
+            if intervals[i].start - intervals[i - 1].end > 1:
+                yield '...'
+            yield ' '.join(
+                map(str, range(intervals[i].start, intervals[i].end + 1))
+            )
+        if intervals[-1].end < self._total_pages:
+            yield '...'
 
     def _validate_values(self) -> None:
         if (
-            not self._all_attrs_are_non_negative
+            self._negative_attr_present
             or self._current_page > self._total_pages
         ):
             raise ValueError('Invalid pagination parameters values.')
@@ -89,21 +89,14 @@ class Paginator:
             raise TypeError('Pagination requires all integer numbers.')
 
     @property
-    def _all_attrs_are_non_negative(self) -> bool:
-        return all((getattr(self, a) >= 0 for a in self._attrs))
+    def _negative_attr_present(self) -> bool:
+        return any((getattr(self, a) < 0 for a in self._attrs))
 
     @property
     def _all_attrs_are_integers(self) -> bool:
         return all(isinstance(getattr(self, a), int) for a in self._attrs)
 
 
-def generate_ascending_numbers_list(interval: Interval) -> list[str]:
-    """Returns a list of ascending integer strings.
-    From start to finish inclusive."""
-
-    return list(map(str, range(interval.start, interval.end + 1)))
-
-
 if __name__ == '__main__':
-    p = Paginator(5, 10, 1, 1)
+    p = Paginator(50_000_000, 100_000_000, 10, 3)
     p.print_pagination()

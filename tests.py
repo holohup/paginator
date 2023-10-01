@@ -1,24 +1,6 @@
 from unittest import TestCase
 
-from main import Interval, Paginator, generate_ascending_numbers_list
-
-
-class TestTools(TestCase):
-    """Custom utils tests."""
-
-    def test_generate_ascending_numbers_string(self):
-        expected_results = {
-            (1, 5): ['1', '2', '3', '4', '5'],
-            (1, 0): [],
-            (1, 1): ['1'],
-            (-5, 0): ['-5', '-4', '-3', '-2', '-1', '0'],
-        }
-        for numbers, expected in expected_results.items():
-            with self.subTest(numbers=numbers, expected=expected):
-                self.assertEqual(
-                    generate_ascending_numbers_list(Interval(*numbers)),
-                    expected,
-                )
+from main import Paginator
 
 
 class TestBorderCases(TestCase):
@@ -51,6 +33,11 @@ class TestBorderCases(TestCase):
             Paginator(50_000_000_000, 100_000_000_000, 1, 1).get_pages(),
             '1 ... 49999999999 50000000000 50000000001 ... 100000000000',
         )
+
+    def test_100_million_pages(self):
+        self.assertEqual(Paginator(
+            100_000_000, 100_000_000, 100_000_000, 100_000_000
+        ).get_pages(), ' '.join(map(str, range(1, 100_000_001))))
 
 
 class TestRegularCases(TestCase):
