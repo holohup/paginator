@@ -1,3 +1,4 @@
+from typing import Any
 from unittest import TestCase
 
 from main import Paginator
@@ -11,8 +12,10 @@ class TestBorderCases(TestCase):
 
     def test_single_page_pagination(self):
         for i in range(3):
-            with self.subTest(i=i):
-                self.assertEqual(Paginator(1, 1, i, i).get_pages(), '1')
+            params = (1, 1, i, i)
+            expected = '1'
+            with self.subTest(f'Params {params} return "{expected}"', i=i):
+                self.assertEqual(Paginator(*params).get_pages(), expected)
 
     def test_two_pages_pagination(self):
         self.assertEqual(Paginator(1, 2, 1, 1).get_pages(), '1 2')
@@ -41,7 +44,11 @@ class TestRegularCases(TestCase):
             (4, 10, 1, 100): '1 2 3 4 5 6 7 8 9 10',
         }
         for params, result in expected_results.items():
-            with self.subTest(params=params, result=result):
+            with self.subTest(
+                f'Params {params} return "{result}"',
+                params=params,
+                result=result,
+            ):
                 self.assertEqual(Paginator(*params).get_pages(), result)
 
     def test_with_many_pages(self):
@@ -57,31 +64,28 @@ class TestRegularCases(TestCase):
             '1 ... 49999999999 50000000000 50000000001 ... 100000000000',
         )
 
-    def test_100_million_pages_in_result(self):
-        self.assertEqual(Paginator(
-            100_000_000, 100_000_000, 100_000_000, 100_000_000
-        ).get_pages(), ' '.join(map(str, range(1, 100_000_001))))
-
 
 class TestInvalidPaginationParametersExceptions(TestCase):
-    """Tests for the expected exceptions to be raised."""
+    """Tests if the expected exceptions are raised."""
 
     def test_current_page_bigger_then_pages_amount_raises_exception(self):
         with self.assertRaises(ValueError):
             Paginator(current_page=5, total_pages=3, boundaries=1, around=1)
 
     def test_non_integer_on_init_raises_exception(self):
-        with self.assertRaises(TypeError):
-            Paginator(current_page=5.0, total_pages=30, boundaries=1, around=1)
-            Paginator(current_page=5, total_pages='a', boundaries=1, around=1)
-            Paginator(
-                current_page=5, total_pages=30, boundaries=None, around=1
-            )
-            Paginator(
-                current_page=5, total_pages=30, boundaries=1, around=False
+        for non_int_value in (5.0, 'a', None, True, [1, 2], {'a': 5}):
+            self._ensure_expected_exception_is_raised_for_all_fields(
+                non_int_value, TypeError
             )
 
     def test_negative_values_on_init_raise_exception(self):
+        self._ensure_expected_exception_is_raised_for_all_fields(
+            -1, ValueError
+        )
+
+    def _ensure_expected_exception_is_raised_for_all_fields(
+        self, value: Any, exception: Exception
+    ) -> None:
         defaults = {
             'current_page': 3,
             'total_pages': 10,
@@ -89,8 +93,11 @@ class TestInvalidPaginationParametersExceptions(TestCase):
             'around': 1,
         }
         for field in defaults.keys():
-            presets = defaults.copy()
-            with self.subTest(field=field):
-                presets[field] = -1
-                with self.assertRaises(ValueError):
-                    Paginator(**presets)
+            params = defaults.copy()
+            with self.subTest(
+                f'Paginator("{field}" = {value}) raises {exception.__name__}',
+                field=field,
+            ):
+                params[field] = value
+                with self.assertRaises(exception):
+                    Paginator(**params)

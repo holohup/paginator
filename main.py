@@ -12,17 +12,16 @@ class Paginator:
     """Main paginator class. Use method get_pages() for the pagination str."""
 
     OPEN, CLOSE = -1, 1
-    _attrs = '_current_page', '_last_page', '_boundaries', '_around'
+    _FIRST_PAGE = 1
 
     def __init__(
         self, current_page: int, total_pages: int, boundaries: int, around: int
     ) -> None:
+        self._validate_values(current_page, total_pages, boundaries, around)
         self._current_page = current_page
         self._last_page = total_pages
-        self._first_page = 1
         self._boundaries = boundaries
         self._around = around
-        self._validate_values()
 
     def print_pagination(self) -> None:
         print(self.get_pages())
@@ -35,7 +34,7 @@ class Paginator:
     def _scribe_interval_events(self) -> list[tuple]:
         events = [
             (
-                max(self._first_page, self._current_page - self._around),
+                max(self._FIRST_PAGE, self._current_page - self._around),
                 self.OPEN,
             ),
             (
@@ -49,10 +48,10 @@ class Paginator:
 
     def _add_boundaries_events(self, events: list[tuple]) -> None:
         boundaries_events = [
-            (self._first_page, self.OPEN),
+            (self._FIRST_PAGE, self.OPEN),
             (min(self._boundaries, self._last_page), self.CLOSE),
             (
-                max(self._first_page, self._last_page - self._boundaries + 1),
+                max(self._FIRST_PAGE, self._last_page - self._boundaries + 1),
                 self.OPEN,
             ),
             (self._last_page, self.CLOSE),
@@ -64,10 +63,7 @@ class Paginator:
         open_intervals_sum = 0
         interval_start = None
         for interval in intervals:
-            if interval[1] == self.OPEN:
-                open_intervals_sum += 1
-            elif interval[1] == self.CLOSE:
-                open_intervals_sum -= 1
+            open_intervals_sum -= interval[1]
             if open_intervals_sum > 0 and interval_start is None:
                 interval_start = interval[0]
             if open_intervals_sum <= 0 and interval_start is not None:
@@ -77,27 +73,35 @@ class Paginator:
 
     def _generate_pagination_results(self, intervals: list[Interval]):
         last_end = 0
-        for i in intervals:
-            if i.start - last_end > 1:
+        for interval in intervals:
+            if interval.start - last_end > 1:
                 yield '...'
-            yield ' '.join(map(str, range(i.start, i.end + 1)))
-            last_end = i.end
+            yield ' '.join(map(str, range(interval.start, interval.end + 1)))
+            last_end = interval.end
         if last_end < self._last_page:
             yield '...'
 
-    def _validate_values(self) -> None:
-        if self._negative_attr_present or self._current_page > self._last_page:
-            raise ValueError('Invalid pagination parameters values.')
-        if not self._all_attrs_are_integers:
-            raise TypeError('Pagination requires all integer numbers.')
+    @staticmethod
+    def _validate_values(
+        current_page: int, total_pages: int, boundaries: int, around: int
+    ) -> None:
+        if not all(
+            [
+                type(value) is int
+                for value in (current_page, total_pages, boundaries, around)
+            ]
+        ):
+            raise TypeError('Pagination requires all integers.')
 
-    @property
-    def _negative_attr_present(self) -> bool:
-        return any((getattr(self, a) < 0 for a in self._attrs))
+        if any(
+            (current_page < 0, total_pages < 0, boundaries < 0, around < 0)
+        ):
+            raise ValueError(
+                'Pagination parameters cannot be negative values.'
+            )
 
-    @property
-    def _all_attrs_are_integers(self) -> bool:
-        return all(isinstance(getattr(self, a), int) for a in self._attrs)
+        if current_page > total_pages:
+            raise ValueError('Current page cannot be bigger then total pages.')
 
 
 if __name__ == '__main__':
